@@ -11,7 +11,7 @@ func main() {
 	url := "http://localhost:8080/items/123/count/"
 
 	var jsonStr = []byte(`{}`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
