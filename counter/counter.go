@@ -1,23 +1,30 @@
 package counter
 
-// Status provides the current status of a CounterNode
-type Status uint16
-
-const (
-	// Status_WORKING is set when counter node is available to receive requests from user.
-	Status_WORKING Status = iota
-
-	// Status_UNAVAILABLE is set when counter node temporarily stops working
-	Status_UNAVAILABLE
-
-	// Status_RESIGNED is set when counter node permanently halts
-	// and we can safely reclaim its resources
-	Status_RESIGNED
+import (
+	"encoding/json"
+	"fmt"
 )
 
-// Node contains information about a Counter Node (Counter Server)
-type Node struct {
-	GUID   string
-	PortID uint16
-	Status Status
+// UserInfo contains the input data fields
+type UserInfo struct {
+	ID     string `json:"tenantID"`
+	Tenant string `json:"tenant"`
+}
+
+// ParseAndSave parses the request body and if the data isn't malformed or corrupt, saves it.
+func ParseAndSave(data []byte) (*UserInfo, error) {
+	var user UserInfo
+	fmt.Println(data)
+	if err := json.Unmarshal(data, &user); err != nil {
+		panic(err)
+	}
+	fmt.Println(user.ID)
+	fmt.Println(user.Tenant)
+	return &UserInfo{}, nil
+}
+
+// String implements stringer interface over UserInfo,
+// required to print UserInfo in a user friendly way to the output stream.
+func (u *UserInfo) String() string {
+	return "TenantID : " + u.ID + " , " + "Tenant : " + u.Tenant
 }

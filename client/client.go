@@ -8,11 +8,13 @@ import (
 )
 
 func main() {
-	url := "http://localhost:8080/items/123/count/"
+	url := "http://localhost:8080/items/"
 
-	var jsonStr = []byte(`{}`)
-	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
-
+	var jsonStr = []byte(`{"item":{"tenantID":"money123","tenant":"Money"}}`)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		fmt.Println(err)
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
