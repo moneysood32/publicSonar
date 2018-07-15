@@ -12,8 +12,8 @@ import (
 	"sync"
 )
 
-// /items/{tenantID}/count
-var tenantIDURL = regexp.MustCompile(`^/items\/.*\/count$`)
+// /items/{tenant}/count
+var tenantURL = regexp.MustCompile(`^/items\/.*\/count$`)
 
 // Counters holds the information about all the Counter Nodes in the system
 var Counters = make(map[string]Node)
@@ -29,7 +29,7 @@ func (c CoordinatorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case requestURL == "/items":
 		masterHandler.HandlePostRequest(w, r)
-	case tenantIDURL.MatchString(requestURL):
+	case tenantURL.MatchString(requestURL):
 		masterHandler.HandleGetRequest(w, r)
 	default:
 		invalidrequestHandler(w, r)
@@ -44,7 +44,7 @@ func (c CounterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case requestURL == "/items":
 		slaveHandler.HandlePostRequest(w, r)
-	case tenantIDURL.MatchString(requestURL):
+	case tenantURL.MatchString(requestURL):
 		slaveHandler.HandleGetRequest(w, r)
 	default:
 		invalidrequestHandler(w, r)
