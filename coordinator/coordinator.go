@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"publicSonarAssignment/src/counter"
+	"publicSonarAssignment/src/counter/requestProcessor"
 	"publicSonarAssignment/src/requestHandler"
 	"publicSonarAssignment/src/util"
 	"regexp"
@@ -20,28 +21,45 @@ var Counters = make(map[string]counter.Node)
 
 var maxPortID uint16 = 3000
 
+type CoordinatorHandler struct{}
+type CounterHandler struct{}
+
 func main() {
 
 	// creates desired number of counter nodes at startup of server
 	createCounters(3)
 
-	http.HandleFunc("/", HandleURLs)
-
-	fmt.Printf("Starting coordinator server...\n")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
+	coordinatorServer := &http.Server{
+		Addr:    ":8080",
+		Handler: CoordinatorHandler{},
 	}
+	fmt.Printf("Starting coordinator server...\n")
+	log.Fatal(coordinatorServer.ListenAndServe())
+
 }
 
-// HandleURLs handles all the user request,
-// spent 3+ hours on dynamic routing logic and eventually came up with this :D
-func HandleURLs(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP handles all the http requests sent to Coordinator,
+// spent 3+ hours on dynamic routing logic for Coordinator and CounterNodes, eventually came up with this :D
+func (c CoordinatorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestURL := removeSlash(r.URL.Path)
 	switch {
 	case requestURL == "/items":
 		requestHandler.HandlePostRequest(w, r)
 	case tenantIDURL.MatchString(requestURL):
 		requestHandler.HandleGetRequest(w, r)
+	default:
+		invalidrequestHandler(w, r)
+	}
+}
+
+// ServeHTTP handles all the user request,
+func (c CounterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestURL := removeSlash(r.URL.Path)
+	switch {
+	case requestURL == "/items":
+		requestProcessor.HandlePostRequest(w, r)
+	case tenantIDURL.MatchString(requestURL):
+		requestProcessor.HandleGetRequest(w, r)
 	default:
 		invalidrequestHandler(w, r)
 	}
@@ -74,7 +92,11 @@ func createCounters(count int) {
 				Status: counter.Status_WORKING,
 			}
 			mutex.Unlock()
-			if err := http.ListenAndServe(":"+strconv.Itoa(int(portID)), nil); err != nil {
+			counterNode := &http.Server{
+				Addr:    ":" + strconv.Itoa(int(portID)),
+				Handler: CounterHandler{},
+			}
+			if err := counterNode.ListenAndServe(); err != nil {
 				mutex.Lock()
 				Counters[GUID] = counter.Node{
 					GUID:   GUID,
@@ -94,5 +116,6 @@ func generateGUID() string {
 
 func generatePortID() uint16 {
 	maxPortID++
+	fmt.Println(maxPortID)
 	return maxPortID
 }

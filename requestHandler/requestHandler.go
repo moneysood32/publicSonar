@@ -2,16 +2,28 @@
 package requestHandler
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 )
 
 func HandleGetRequest(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "in HandleGetRequest")
 
 	switch r.Method {
 	case "GET":
-		fmt.Fprintf(w, "GET successful in HandleGetRequest")
+		url := "http://localhost:3001" + r.URL.Path
+		var jsonStr = []byte(`{}`)
+		req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
+		err = resp.Write(w)
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
 	default:
 		fmt.Fprintf(w, "invalid URL for GET request, try http://localhost:8080/items/{tenantID}/count")
 	}
