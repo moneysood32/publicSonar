@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"publicSonarAssignment/src/coordinator/counterDetails"
 	masterHandler "publicSonarAssignment/src/coordinator/requestHandler"
 	slaveHandler "publicSonarAssignment/src/counter/requestHandler"
 	"publicSonarAssignment/src/util"
@@ -14,11 +16,6 @@ import (
 
 // /items/{tenant}/count
 var tenantURL = regexp.MustCompile(`^/items\/.*\/count$`)
-
-// Counters holds the information about all the Counter Nodes in the system
-var Counters = make(map[string]Node)
-
-var maxPortID uint16 = 3000
 
 type CoordinatorHandler struct{}
 
@@ -51,14 +48,23 @@ func (c CounterHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 func generateGUID() string {
-	return "CounterNode1"
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
 
 func generatePortID() uint16 {
-	maxPortID++
-	fmt.Println(maxPortID)
-	return maxPortID
+	counterDetails.CurrentPortID++
+	fmt.Println(counterDetails.CurrentPortID)
+	if counterDetails.CurrentPortID == counterDetails.MaxPortID {
+		fmt.Println("PortID has reached max limit")
+	}
+	return counterDetails.CurrentPortID
 }
 
 // removeSlash removes the last character of the URL if it is "/"
@@ -82,22 +88,23 @@ func createCounters(count int) {
 
 		go func(GUID string, portID uint16) {
 			mutex.Lock()
-			Counters[GUID] = Node{
+			counterDetails.Counters[GUID] = counterDetails.Node{
 				GUID:   GUID,
 				PortID: portID,
-				Status: Status_WORKING,
+				Status: counterDetails.Status_WORKING,
 			}
 			mutex.Unlock()
 			counterNode := &http.Server{
 				Addr:    ":" + strconv.Itoa(int(portID)),
 				Handler: CounterHandler{},
 			}
+			counterDetails.CurrentRequests[strconv.Itoa(int(portID))] = 0
 			if err := counterNode.ListenAndServe(); err != nil {
 				mutex.Lock()
-				Counters[GUID] = Node{
+				counterDetails.Counters[GUID] = counterDetails.Node{
 					GUID:   GUID,
 					PortID: portID,
-					Status: Status_RESIGNED,
+					Status: counterDetails.Status_RESIGNED,
 				}
 				mutex.Unlock()
 				log.Fatal(err)

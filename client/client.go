@@ -10,7 +10,7 @@ import (
 func main() {
 	url := "http://localhost:8080/items/"
 
-	var jsonStr = []byte(`{"tenant":"Money","itemID":"2"}`)
+	var jsonStr = []byte(`{"tenant":"Money","itemID":"5"}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		fmt.Println(err)

@@ -6,13 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"publicSonarAssignment/src/coordinator/counterDetails"
 )
 
 func HandleGetRequest(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		url := "http://localhost:3001" + r.URL.Path
+		// availableCounterNodes := getAvailableCounterNodes()
+		selectedCounter := selectCounterToProcessRequest()
+		fmt.Println(selectedCounter)
+		url := "http://localhost:" + selectedCounter + r.URL.Path
 		req, err := http.NewRequest("GET", url, nil)
 
 		client := &http.Client{}
@@ -54,4 +58,28 @@ func HandlePostRequest(w http.ResponseWriter, r *http.Request) {
 	default:
 		fmt.Fprintf(w, "invalid URL for POST request, try http://localhost:8080/items/")
 	}
+}
+
+// func getAvailableCounterNodes() []counterDetails.Node {
+// 	nodes := make([]counterDetails.Node, 0)
+// 	for _, node := range counterDetails.Counters {
+// 		if node.Status == counterDetails.Status_WORKING {
+// 			nodes = append(nodes, node)
+// 		}
+// 	}
+// 	return nodes
+// }
+
+func selectCounterToProcessRequest() string {
+	var leastLoadedPort string
+	leastRequests := 1<<31 - 1
+	for port, requestCount := range counterDetails.CurrentRequests {
+		fmt.Println(port, requestCount)
+		if requestCount < leastRequests {
+			leastRequests = requestCount
+			leastLoadedPort = port
+			counterDetails.CurrentRequests[port]++
+		}
+	}
+	return leastLoadedPort
 }
